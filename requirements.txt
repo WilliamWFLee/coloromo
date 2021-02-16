@@ -1,1 +1,2 @@
-# Add your package requirements here
+Pillow==8.1.0
+numpy==1.20.1
