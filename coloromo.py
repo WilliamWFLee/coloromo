@@ -26,12 +26,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from typing import List, Optional, Tuple, Union
+
+import numpy as np
+
+Int = Union[int, np.uint8]
+Color = Tuple[Int, Int, Int]
+
+
+class Palette:
+    """
+    A class for holding a palette of colors.
+    """
+
+    def __init__(self):
+        self.colors: List[Color] = []
+
 
 class Coloromo:
     """
     A class for performing image palette reductions.
     """
 
-    def __init__(self):
-        self.palette = []
+    def __init__(self, palette: Optional[Palette] = None):
+        self.palette = palette if palette else Palette()
         self.cache = {}
