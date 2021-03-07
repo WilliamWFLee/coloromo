@@ -26,7 +26,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, Optional, Set, Tuple, Union
 
 import numpy as np
 
@@ -40,7 +40,7 @@ class Palette:
     """
 
     def __init__(self):
-        self.colors: List[Color] = []
+        self.colors: Set[Color] = set()
 
     def add(self, colors: Iterable[Color]):
         """
@@ -49,7 +49,7 @@ class Palette:
         :param colors: An iterable of color tuples to add to the palette
         :type colors: Iterable[Color]
         """
-        self.colors.extend(colors)
+        self.colors.update(*colors)
 
 
 class Coloromo:
