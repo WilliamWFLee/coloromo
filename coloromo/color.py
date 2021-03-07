@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-coloromo - Image color palette reduction
+coloromo.color
 
 MIT License
 
@@ -26,15 +26,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .color import Palette
-from typing import Optional
+from .types import Color
+from typing import Iterable, Set
 
 
-class Coloromo:
+class Palette:
     """
-    A class for performing image palette reductions.
+    A class for holding a palette of colors.
     """
 
-    def __init__(self, palette: Optional[Palette] = None):
-        self.palette = palette if palette else Palette()
-        self.cache = {}
+    def __init__(self):
+        self.colors: Set[Color] = set()
+
+    def add(self, colors: Iterable[Color]):
+        """
+        Add colors to the palette
+
+        :param colors: An iterable of color tuples to add to the palette
+        :type colors: Iterable[Color]
+        """
+        self.colors.update(*colors)
