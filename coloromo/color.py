@@ -27,11 +27,16 @@ SOFTWARE.
 """
 
 import math as m
-from typing import Iterable, Set
+from typing import Iterable, NamedTuple, Set
 
-from .types import Color, FloatColor, Int
+from .types import FloatColor, Int, IntColor
 
 __all__ = ["Palette"]
+
+
+class RGBCIELABColor(NamedTuple):
+    rgb: IntColor
+    cielab: FloatColor
 
 
 class CIE:
@@ -245,13 +250,15 @@ class Palette:
     """
 
     def __init__(self):
-        self.colors: Set[Color] = set()
+        self.colors: Set[RGBCIELABColor] = set()
 
-    def add(self, colors: Iterable[Color]):
+    def add(self, colors: Iterable[IntColor]) -> None:
         """
-        Add colors to the palette
+        Add RGB colors to the palette
 
         :param colors: An iterable of color tuples to add to the palette
         :type colors: Iterable[Color]
         """
-        self.colors.update(*colors)
+        for color in colors:
+            cielab_color = CIE.srgb_to_cielab(*color)
+            self.colors.add(RGBCIELABColor(color, cielab_color))

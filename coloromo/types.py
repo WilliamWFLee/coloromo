@@ -31,5 +31,5 @@ from typing import Tuple, Union
 import numpy as np
 
 Int = Union[int, np.uint8]
-Color = Tuple[Int, Int, Int]
+IntColor = Tuple[Int, Int, Int]
 FloatColor = Tuple[float, float, float]
