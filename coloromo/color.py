@@ -143,7 +143,7 @@ class CIE:
         L_2: float,
         a_2: float,
         b_2: float,
-    ):
+    ) -> float:
         # Calculates the CIEDE2000 color difference value between two CIELAB colors
         # Source: http://www2.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
 
@@ -154,9 +154,7 @@ class CIE:
 
         # Equal to G + 1
         G_plus = 1 + 0.5 * (
-            1
-            - (C_star_ab_bar ** 7 / (C_star_ab_bar ** 7 + cls.TWENTY_FIVE_POWER_SEVEN))
-            ** 0.5
+            1 - (1 / (1 + cls.TWENTY_FIVE_POWER_SEVEN / C_star_ab_bar ** 7)) ** 0.5
         )
         a_prime_1 = G_plus * a_1
         a_prime_2 = G_plus * a_2
@@ -218,11 +216,7 @@ class CIE:
         )
 
         Delta_theta = 30 * m.exp(-(((h_prime_bar - 275) / 25) ** 2))
-        R_C = (
-            2
-            * (C_prime_bar ** 7 / (C_prime_bar ** 7 + cls.TWENTY_FIVE_POWER_SEVEN))
-            ** 0.5
-        )
+        R_C = 2 * (1 / (1 + cls.TWENTY_FIVE_POWER_SEVEN / C_prime_bar ** 7)) ** 0.5
         S_L = (
             1
             + (0.015 * (L_prime_bar - 50) ** 2) / (20 + (L_prime_bar - 50) ** 2) ** 0.5
