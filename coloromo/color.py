@@ -140,7 +140,7 @@ class CIE:
         return m.degrees(angle if angle >= 0 else angle + cls.TAU)
 
     @classmethod
-    def _ciede2000(
+    def ciede2000(
         cls,
         L_1: float,
         a_1: float,
@@ -149,6 +149,24 @@ class CIE:
         a_2: float,
         b_2: float,
     ) -> float:
+        """Calculates the CIEDE2000 difference between two CIELAB colors
+
+        :param L_1: The L* value of the first color
+        :type L_1: float
+        :param a_1: The a* value of the first color
+        :type a_1: float
+        :param b_1: The b* value of the first color
+        :type b_1: float
+        :param L_2: The L* value of the second color
+        :type L_2: float
+        :param a_2: The a* value of the second color
+        :type a_2: float
+        :param b_2: The b* value of the second color
+        :type b_2: float
+        :return: The CIEDE2000 difference
+        :rtype: float
+        """
+
         # Calculates the CIEDE2000 color difference value between two CIELAB colors
         # Source: http://www2.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
 
