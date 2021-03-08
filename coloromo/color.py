@@ -26,6 +26,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import math as m
 from typing import Iterable, Set
 
 from .types import Color, FloatColor, Int
@@ -55,6 +56,11 @@ class CIE:
     SIGMA_CUBED = SIGMA ** 3
     ONE_THIRD = 1 / 3
     FOUR_TWENTYNINTHS = 4 / 29
+    TWENTY_FIVE_POWER_SEVEN = 25 ** 7
+
+    # Constants for CIEDE2000
+    TAU = 2 * m.pi
+    K_L = K_C = K_H = 1
 
     @classmethod
     def _srgb_to_ciexyz(cls, r: Int, g: Int, b: Int) -> FloatColor:
@@ -114,6 +120,129 @@ class CIE:
         """
         L, a, b = cls._ciexyz_to_cielab(*cls._srgb_to_ciexyz(r, g, b))
         return (L, a, b)
+
+    @classmethod
+    def radians_to_degrees(cls, angle: float) -> float:
+        """
+        Converts radians to degrees, accepting values between -pi and pi.
+
+        :raises ValueError: If the angle is not between -pi and pi.
+        :return: The angle in degrees, in the range 0 to 360
+        :rtype: float
+        """
+        if angle > m.pi or angle < -m.pi:
+            raise ValueError("Angle must be between -pi and pi")
+        return m.degrees(angle if angle >= 0 else angle + cls.TAU)
+
+    @classmethod
+    def _ciede2000(
+        cls,
+        L_1: float,
+        a_1: float,
+        b_1: float,
+        L_2: float,
+        a_2: float,
+        b_2: float,
+    ):
+        # Calculates the CIEDE2000 color difference value between two CIELAB colors
+        # Source: http://www2.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
+
+        C_star_1_ab = (a_1 ** 2 + b_1 ** 2) ** 0.5
+        C_star_2_ab = (a_2 ** 2 + b_2 ** 2) ** 0.5
+
+        C_star_ab_bar = (C_star_1_ab + C_star_2_ab) / 2
+
+        # Equal to G + 1
+        G_plus = 1 + 0.5 * (
+            1
+            - (C_star_ab_bar ** 7 / (C_star_ab_bar ** 7 + cls.TWENTY_FIVE_POWER_SEVEN))
+            ** 0.5
+        )
+        a_prime_1 = G_plus * a_1
+        a_prime_2 = G_plus * a_2
+
+        C_prime_1 = (a_prime_1 ** 2 + b_1 ** 2) ** 0.5
+        C_prime_2 = (a_prime_2 ** 2 + b_2 ** 2) ** 0.5
+
+        h_prime_1 = (
+            0
+            if b_1 == 0 and a_prime_1 == 0
+            else cls.radians_to_degrees(m.atan2(b_1, a_prime_1))
+        )
+        h_prime_2 = (
+            0
+            if b_2 == 0 and a_prime_2 == 0
+            else cls.radians_to_degrees(m.atan2(b_2, a_prime_2))
+        )
+
+        Delta_L_prime = L_2 - L_1
+        Delta_C_prime = C_prime_2 - C_prime_1
+
+        # Optimisations
+        h_prime_diff = h_prime_2 - h_prime_1
+        abs_h_prime_diff = abs(h_prime_diff)
+
+        if C_prime_1 == 0 or C_prime_2 == 0:
+            Delta_h_prime = 0
+        elif abs_h_prime_diff <= 180:
+            Delta_h_prime = h_prime_diff
+        elif h_prime_diff > 180:
+            Delta_h_prime = h_prime_diff - 360
+        else:
+            Delta_h_prime = h_prime_diff + 360
+
+        Delta_H_prime = (
+            2 * (C_prime_1 * C_prime_2) ** 0.5 * m.sin(m.radians(Delta_h_prime / 2))
+        )
+
+        L_prime_bar = (L_1 + L_2) / 2
+        C_prime_bar = (C_prime_1 + C_prime_2) / 2
+
+        # An optimisation
+        h_prime_sum = h_prime_1 + h_prime_2
+        if C_prime_1 == 0 or C_prime_2 == 0:
+            h_prime_bar = h_prime_sum
+        elif abs_h_prime_diff <= 180:
+            h_prime_bar = h_prime_sum / 2
+        elif h_prime_sum < 360:
+            h_prime_bar = (h_prime_sum + 360) / 2
+        else:
+            h_prime_bar = (h_prime_sum - 360) / 2
+
+        T = (
+            1
+            - 0.17 * m.cos(m.radians(h_prime_bar - 30))
+            + 0.24 * m.cos(m.radians(2 * h_prime_bar))
+            + 0.32 * m.cos(m.radians(3 * h_prime_bar + 6))
+            - 0.2 * m.cos(m.radians(4 * h_prime_bar - 63))
+        )
+
+        Delta_theta = 30 * m.exp(-(((h_prime_bar - 275) / 25) ** 2))
+        R_C = (
+            2
+            * (C_prime_bar ** 7 / (C_prime_bar ** 7 + cls.TWENTY_FIVE_POWER_SEVEN))
+            ** 0.5
+        )
+        S_L = (
+            1
+            + (0.015 * (L_prime_bar - 50) ** 2) / (20 + (L_prime_bar - 50) ** 2) ** 0.5
+        )
+        S_C = 1 + 0.045 * C_prime_bar
+        S_H = 1 + 0.015 * C_prime_bar * T
+        R_T = -m.sin(m.radians(2 * Delta_theta)) * R_C
+
+        Delta_E = (
+            (Delta_L_prime / (cls.K_L * S_L)) ** 2
+            + (Delta_C_prime / (cls.K_C * S_C)) ** 2
+            + (Delta_H_prime / (cls.K_H * S_H)) ** 2
+            + (
+                R_T
+                * (Delta_C_prime / (cls.K_C * S_C))
+                * (Delta_H_prime / (cls.K_H * S_H))
+            )
+        ) ** 0.5
+
+        return Delta_E
 
 
 class Palette:
