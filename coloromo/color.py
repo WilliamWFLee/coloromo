@@ -269,6 +269,7 @@ class Palette:
 
     def __init__(self):
         self.colors: Set[RGBCIELABColor] = set()
+        self.cache = {}
 
     def add(self, colors: Iterable[IntColor]) -> None:
         """
@@ -280,3 +281,25 @@ class Palette:
         for color in colors:
             cielab_color = CIE.srgb_to_cielab(*color)
             self.colors.add(RGBCIELABColor(color, cielab_color))
+
+    def find_nearest(self, color: IntColor) -> IntColor:
+        """
+        Finds the nearest RGB color in the palette to the specified color.
+
+        Uses CIEDE2000 color difference
+
+        :param color: The source color in RGB
+        :type color: IntColor
+        :raises Exception: If the palette has no colours in it
+        :return: The nearest color in the palette in RGB
+        :rtype: IntColor
+        """
+        if not self.colors:
+            raise Exception("Palette is empty")
+        if color in self.cache:
+            return self.cache[color]
+        color_as_cielab = CIE.srgb_to_cielab(*color)
+        return min(
+            (color for color in self.colors),
+            key=lambda c: CIE.ciede2000(*c.cielab, *color_as_cielab),
+        ).rgb
