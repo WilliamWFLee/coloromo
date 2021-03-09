@@ -26,8 +26,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from pathlib import Path
+from typing import BinaryIO, Optional, Union
+
+import numpy as np
+from PIL import Image
+
 from .color import Palette
-from typing import Optional
 
 
 class Coloromo:
@@ -37,4 +42,17 @@ class Coloromo:
 
     def __init__(self, palette: Optional[Palette] = None):
         self.palette = palette if palette else Palette()
-        self.cache = {}
+
+    def reduce_image(
+        self, image: Union[str, Path, BinaryIO, Image.Image]
+    ) -> Image.Image:
+        if isinstance(image, (str, Path, BinaryIO)):
+            image = Image.open(image)
+        image_data = [
+            [tuple(pixel) for pixel in row] for row in np.array(image).tolist()
+        ]
+        reduced_image_data = [
+            [self.palette.find_nearest(pixel) for pixel in row] for row in image_data
+        ]
+        reduced_image = Image.fromarray(np.array(reduced_image_data, dtype=np.uint8))
+        return reduced_image
