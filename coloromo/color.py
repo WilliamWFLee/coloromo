@@ -299,7 +299,9 @@ class Palette:
         if color in self.cache:
             return self.cache[color]
         color_as_cielab = CIE.srgb_to_cielab(*color)
-        return min(
+        nearest_color = min(
             (color for color in self.colors),
             key=lambda c: CIE.ciede2000(*c.cielab, *color_as_cielab),
         ).rgb
+        self.cache[color] = nearest_color
+        return nearest_color
